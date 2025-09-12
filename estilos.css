@@ -14,7 +14,8 @@ body {
   text-align: center;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
+  padding: 20px;
 }
 
 .content {
@@ -22,12 +23,38 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  min-height: 100vh;
   text-align: center;
+  padding: 20px;
+}
+
+nav {
+  margin-bottom: 20px;
+}
+
+nav a {
+  margin: 0 10px;
+  color: #e0e0e0;
+  text-decoration: none;
+  font-size: 16px;
+  padding: 8px 16px;
+  background-color: #2a3b4c;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+nav a:hover {
+  background-color: #3c5066;
+}
+
+nav a.router-link-active {
+  background-color: #4a6a88;
 }
 
 button,
-.volver-btn {
+.eliminar-btn,
+.incrementar-btn,
+.decrementar-btn {
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
@@ -39,21 +66,41 @@ button,
 }
 
 button:hover,
-.volver-btn:hover {
+.eliminar-btn:hover,
+.incrementar-btn:hover,
+.decrementar-btn:hover {
   background-color: #3c5066;
 }
 
 button:active,
-.volver-btn:active {
+.eliminar-btn:active,
+.incrementar-btn:active,
+.decrementar-btn:active {
   background-color: #1f2d3b;
 }
 
-.volver-btn {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  padding: 8px 16px;
+.eliminar-btn,
+.incrementar-btn,
+.decrementar-btn {
+  padding: 5px 10px;
   font-size: 14px;
+  margin: 0 5px;
+}
+
+.cantidad-input {
+  width: 60px;
+  padding: 5px;
+  font-size: 14px;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  border: 1px solid #3c5066;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.cantidad-input:focus {
+  outline: none;
+  border-color: #4a6a88;
 }
 
 form {
@@ -85,7 +132,7 @@ input:focus {
 
 table {
   width: 80%;
-  max-width: 600px;
+  max-width: 900px;
   border-collapse: collapse;
   margin: 20px 0;
 }

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestión de Inventario - SPA</title>
+    <link rel="stylesheet" href="estilos.css" />
+    <!-- CDN para Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <!-- CDN para Vue Router -->
+    <script src="https://cdn.jsdelivr.net/npm/vue-router@3.5.3/dist/vue-router.min.js"></script>
+    <!-- CDN para SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- CDN para Toastify -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="inventario.js" defer></script>
+  </head>
+  <body>
+    <div id="app">
+      <div class="menu">
+        <h1>Gestión de Inventario</h1>
+        <nav>
+          <router-link to="/menu">Menú</router-link>
+          <router-link to="/agregar">Agregar Producto</router-link>
+        </nav>
+        <router-view></router-view>
+      </div>
+    </div>
+
+    <!-- Componentes Vue -->
+    <template id="menu-template">
+      <div>
+        <table id="tabla-productos">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Precio</th>
+              <th>Cantidad</th>
+              <th>Calidad</th>
+              <th>Precio Total</th>
+              <th>Modificar Precio</th>
+              <th>Modificar Cantidad</th>
+              <th>Confirmar Cambios</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="producto in productos"
+              :key="producto.nombre + producto.calidad"
+            >
+              <td>{{ producto.nombre }}</td>
+              <td>${{ producto.precio.toFixed(2) }}</td>
+              <td>{{ producto.cantidad }}</td>
+              <td>{{ producto.calidad }}°</td>
+              <td>${{ (producto.precio * producto.cantidad).toFixed(2) }}</td>
+              <td>
+                <input
+                  type="number"
+                  v-model.number="producto.precioInput"
+                  min="0"
+                  step="0.01"
+                  class="precio-input"
+                />
+              </td>
+              <td>
+                <button
+                  class="incrementar-btn"
+                  @click="incrementarCantidad(producto.nombre, producto.calidad)"
+                >
+                  +
+                </button>
+                <button
+                  class="decrementar-btn"
+                  @click="decrementarCantidad(producto.nombre, producto.calidad)"
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  v-model.number="producto.cantidadInput"
+                  min="0"
+                  step="1"
+                  class="cantidad-input"
+                />
+              </td>
+              <td>
+                <button
+                  class="confirmar-btn"
+                  @click="confirmarCambios(producto.nombre, producto.calidad)"
+                >
+                  Confirmar
+                </button>
+              </td>
+              <td>
+                <button
+                  class="eliminar-btn"
+                  @click="eliminarProducto(producto.nombre, producto.calidad)"
+                >
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p
+          class="mensaje"
+          :class="{ error: mensajeError, success: !mensajeError }"
+        >
+          {{ mensaje }}
+        </p>
+      </div>
+    </template>
+
+    <template id="agregar-template">
+      <div class="content">
+        <h1>Agregar Producto</h1>
+        <form @submit.prevent="handleAgregar">
+          <label for="nombre">Nombre:</label>
+          <input type="text" v-model="nuevoProducto.nombre" required />
+          <label for="precio">Precio:</label>
+          <input
+            type="number"
+            v-model.number="nuevoProducto.precio"
+            min="0"
+            step="0.01"
+            required
+          />
+          <label for="cantidad">Cantidad:</label>
+          <input
+            type="number"
+            v-model.number="nuevoProducto.cantidad"
+            min="0"
+            required
+          />
+          <label for="calidad">Calidad:</label>
+          <input
+            type="number"
+            v-model.number="nuevoProducto.calidad"
+            min="0"
+            required
+          />
+          <button type="submit">Agregar</button>
+        </form>
+        <p
+          class="mensaje"
+          :class="{ error: mensajeError, success: !mensajeError }"
+        >
+          {{ mensaje }}
+        </p>
+      </div>
+    </template>
+  </body>
+</html>

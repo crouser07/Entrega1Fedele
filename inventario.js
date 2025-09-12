@@ -4,6 +4,8 @@ class Producto {
     this.precio = precio;
     this.cantidad = cantidad;
     this.calidad = calidad;
+    this.cantidadInput = cantidad; // Inicializar cantidadInput con la cantidad actual
+    this.precioInput = precio; // Inicializar precioInput con el precio actual
   }
 
   toString() {
@@ -26,8 +28,101 @@ const nuevo_objeto = (nombre, precio, cantidad, calidad) => {
       obj: new Producto(nombre, precio, cantidad, calidad),
     };
   } catch (error) {
+    console.error("Error en nuevo_objeto (try-catch):", error);
     return { error: "ERROR INESPERADO AL CREAR EL OBJETO", obj: null };
+  } finally {
+    console.log("nuevo_objeto finalizado");
   }
+};
+
+const guardarLista = (list) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      fetch("https://jsonplaceholder.typicode.com/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: list }),
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error("Error en Fetch al guardar");
+          localStorage.setItem("lista", JSON.stringify(list));
+          console.log("Lista guardada en localStorage:", list);
+          resolve(list);
+        })
+        .catch((error) => {
+          console.error(
+            "Error al guardar la lista en localStorage (promesas):",
+            error
+          );
+          reject(error);
+        })
+        .finally(() => {
+          console.log("guardarLista finalizado");
+        });
+    }, 500);
+  });
+};
+
+const cargarLista = () => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      fetch("https://jsonplaceholder.typicode.com/posts/1")
+        .then((response) => {
+          if (!response.ok) throw new Error("Error en Fetch al cargar");
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Datos simulados de API externa:", data);
+          const listaJSON = localStorage.getItem("lista");
+          console.log("Datos crudos de localStorage:", listaJSON);
+          if (listaJSON) {
+            const listaRaw = JSON.parse(listaJSON);
+            if (!Array.isArray(listaRaw)) {
+              console.error("Datos en localStorage no son un array válido");
+              localStorage.removeItem("lista");
+              resolve([]);
+            }
+            const lista = listaRaw
+              .map((item) => {
+                if (
+                  !item.nombre ||
+                  isNaN(item.precio) ||
+                  isNaN(item.cantidad) ||
+                  isNaN(item.calidad)
+                ) {
+                  console.error("Elemento inválido en localStorage:", item);
+                  return null;
+                }
+                return new Producto(
+                  item.nombre,
+                  item.precio,
+                  item.cantidad,
+                  item.calidad
+                );
+              })
+              .filter((item) => item !== null);
+            console.log("Lista cargada desde localStorage:", lista);
+            resolve(lista);
+          } else {
+            console.log(
+              "No hay datos en localStorage, devolviendo array vacío"
+            );
+            resolve([]);
+          }
+        })
+        .catch((error) => {
+          console.error(
+            "Error al cargar la lista desde localStorage (promesas):",
+            error
+          );
+          localStorage.removeItem("lista");
+          resolve([]);
+        })
+        .finally(() => {
+          console.log("cargarLista finalizado");
+        });
+    }, 300);
+  });
 };
 
 const agregar = function (lista) {
@@ -43,67 +138,11 @@ const agregar = function (lista) {
     guardarLista(newList);
     return newList;
   } catch (error) {
-    console.error("ERROR INESPERADO AL AGREGAR EL OBJETO", error);
+    console.error("ERROR INESPERADO AL AGREGAR EL OBJETO (try-catch):", error);
     return lista;
+  } finally {
+    console.log("agregar finalizado");
   }
-};
-
-const guardarLista = (list) => {
-  try {
-    localStorage.setItem("lista", JSON.stringify(list));
-    console.log("Lista guardada en localStorage:", list);
-  } catch (error) {
-    console.error("Error al guardar la lista en localStorage:", error);
-  }
-};
-
-const cargarLista = () => {
-  try {
-    const listaJSON = localStorage.getItem("lista");
-    console.log("Datos crudos de localStorage:", listaJSON);
-    if (listaJSON) {
-      const listaRaw = JSON.parse(listaJSON);
-      if (!Array.isArray(listaRaw)) {
-        console.error("Datos en localStorage no son un array válido");
-        localStorage.removeItem("lista");
-        return [];
-      }
-      const lista = listaRaw
-        .map((item) => {
-          if (
-            !item.nombre ||
-            isNaN(item.precio) ||
-            isNaN(item.cantidad) ||
-            isNaN(item.calidad)
-          ) {
-            console.error("Elemento inválido en localStorage:", item);
-            return null;
-          }
-          return new Producto(
-            item.nombre,
-            item.precio,
-            item.cantidad,
-            item.calidad
-          );
-        })
-        .filter((item) => item !== null);
-      console.log("Lista cargada desde localStorage:", lista);
-      return lista;
-    }
-    console.log("No hay datos en localStorage, devolviendo array vacío");
-    return [];
-  } catch (error) {
-    console.error("Error al cargar la lista desde localStorage:", error);
-    localStorage.removeItem("lista");
-    return [];
-  }
-};
-
-const mostrar = (lista) => {
-  if (lista.length === 0) {
-    return "NO HAY OBJETOS PARA MOSTRAR";
-  }
-  return lista.map((item) => item.toString()).join("\n");
 };
 
 const eliminar = function (lista) {
@@ -114,144 +153,316 @@ const eliminar = function (lista) {
     guardarLista(newList);
     return newList;
   } catch (error) {
-    console.error("ERROR INESPERADO AL ELIMINAR EL OBJETO", error);
+    console.error("ERROR INESPERADO AL ELIMINAR EL OBJETO (try-catch):", error);
     return lista;
+  } finally {
+    console.log("eliminar finalizado");
   }
 };
 
-function mostrarProductosInterfaz() {
-  if (typeof mostrar !== "function" || typeof lista === "undefined") {
-    document.getElementById("mensaje").textContent =
-      "Error: Funcionalidad no disponible";
-    document.getElementById("mensaje").classList.add("error");
-    return;
-  }
-  const tbody = document.getElementById("lista-productos");
-  if (!tbody) {
-    document.getElementById("mensaje").textContent =
-      "Error: No se encontró la tabla de productos";
-    document.getElementById("mensaje").classList.add("error");
-    return;
-  }
-  tbody.innerHTML = "";
-  const listaJSON = localStorage.getItem("lista");
-  if (!listaJSON) {
-    document.getElementById("mensaje").textContent =
-      "Error: No se encontraron datos en localStorage";
-    document.getElementById("mensaje").classList.add("error");
-    return;
-  }
-  if (lista.length === 0) {
-    document.getElementById("mensaje").textContent =
-      "No hay productos para mostrar";
-    return;
-  }
-  lista.forEach((item) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${item.nombre}</td>
-      <td>$${item.precio.toFixed(2)}</td>
-      <td>${item.cantidad}</td>
-      <td>${item.calidad}°</td>
-    `;
-    tbody.appendChild(row);
-  });
-  document.getElementById("mensaje").textContent = "";
-}
+// Componentes Vue
+Vue.component("menu-component", {
+  template: "#menu-template",
+  data() {
+    return {
+      productos: [],
+      mensaje: "",
+      mensajeError: false,
+    };
+  },
+  created() {
+    this.cargarProductos();
+    // Temporizador: Refrescar cada 5 segundos
+    this.intervalId = setInterval(() => {
+      this.cargarProductos();
+    }, 5000);
+  },
+  beforeDestroy() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
+  },
+  methods: {
+    cargarProductos() {
+      cargarLista()
+        .then((data) => {
+          // Inicializar cantidadInput y precioInput para cada producto
+          this.productos = data.map((producto) => ({
+            ...producto,
+            cantidadInput: producto.cantidad,
+            precioInput: producto.precio,
+          }));
+          if (data.length === 0) {
+            this.mensaje = "No hay productos para mostrar";
+            this.mensajeError = true;
+          } else {
+            this.mensaje = "";
+            this.mensajeError = false;
+          }
+        })
+        .catch((error) => {
+          console.error("Error al cargar productos:", error);
+          this.mensaje = "Error al cargar productos";
+          this.mensajeError = true;
+        });
+    },
+    async incrementarCantidad(nombre, calidad) {
+      try {
+        const producto = this.productos.find(
+          (item) => item.nombre === nombre && item.calidad === calidad
+        );
+        if (!producto) {
+          this.mensaje = "Error: Producto no encontrado";
+          this.mensajeError = true;
+          return;
+        }
+        producto.cantidad += 1;
+        producto.cantidadInput = producto.cantidad; // Sincronizar input
+        await guardarLista(this.productos);
+        Toastify({
+          text: `Cantidad de ${nombre} incrementada`,
+          duration: 3000,
+          gravity: "bottom",
+          position: "right",
+          style: {
+            background: "#4caf50",
+            color: "#fff",
+          },
+        }).showToast();
+        this.mensaje = "";
+        this.mensajeError = false;
+      } catch (error) {
+        console.error("Error en incrementarCantidad (try-catch):", error);
+        this.mensaje = "Error al incrementar cantidad";
+        this.mensajeError = true;
+      } finally {
+        console.log("incrementarCantidad finalizado");
+      }
+    },
+    async decrementarCantidad(nombre, calidad) {
+      try {
+        const producto = this.productos.find(
+          (item) => item.nombre === nombre && item.calidad === calidad
+        );
+        if (!producto) {
+          this.mensaje = "Error: Producto no encontrado";
+          this.mensajeError = true;
+          return;
+        }
+        if (producto.cantidad <= 0) {
+          this.mensaje = "Error: La cantidad no puede ser negativa";
+          this.mensajeError = true;
+          return;
+        }
+        producto.cantidad -= 1;
+        producto.cantidadInput = producto.cantidad; // Sincronizar input
+        await guardarLista(this.productos);
+        Toastify({
+          text: `Cantidad de ${nombre} decrementada`,
+          duration: 3000,
+          gravity: "bottom",
+          position: "right",
+          style: {
+            background: "#4caf50",
+            color: "#fff",
+          },
+        }).showToast();
+        this.mensaje = "";
+        this.mensajeError = false;
+      } catch (error) {
+        console.error("Error en decrementarCantidad (try-catch):", error);
+        this.mensaje = "Error al decrementar cantidad";
+        this.mensajeError = true;
+      } finally {
+        console.log("decrementarCantidad finalizado");
+      }
+    },
+    async confirmarCambios(nombre, calidad) {
+      try {
+        const producto = this.productos.find(
+          (item) => item.nombre === nombre && item.calidad === calidad
+        );
+        if (!producto) {
+          this.mensaje = "Error: Producto no encontrado";
+          this.mensajeError = true;
+          return;
+        }
+        const nuevoPrecio = producto.precioInput;
+        const nuevaCantidad = producto.cantidadInput;
+        if (isNaN(nuevoPrecio) || nuevoPrecio < 0) {
+          this.mensaje = "Error: El precio debe ser un número no negativo";
+          this.mensajeError = true;
+          producto.precioInput = producto.precio; // Restaurar valor
+          return;
+        }
+        if (!Number.isInteger(nuevaCantidad) || nuevaCantidad < 0) {
+          this.mensaje =
+            "Error: La cantidad debe ser un número entero no negativo";
+          this.mensajeError = true;
+          producto.cantidadInput = producto.cantidad; // Restaurar valor
+          return;
+        }
+        producto.precio = nuevoPrecio;
+        producto.cantidad = nuevaCantidad;
+        producto.precioInput = nuevoPrecio; // Sincronizar input
+        producto.cantidadInput = nuevaCantidad; // Sincronizar input
+        await guardarLista(this.productos);
+        Toastify({
+          text: `Precio y cantidad de ${nombre} actualizados`,
+          duration: 3000,
+          gravity: "bottom",
+          position: "right",
+          style: {
+            background: "#4caf50",
+            color: "#fff",
+          },
+        }).showToast();
+        this.mensaje = "";
+        this.mensajeError = false;
+      } catch (error) {
+        console.error("Error en confirmarCambios (try-catch):", error);
+        this.mensaje = "Error al actualizar precio y cantidad";
+        this.mensajeError = true;
+        const producto = this.productos.find(
+          (item) => item.nombre === nombre && item.calidad === calidad
+        );
+        if (producto) {
+          producto.precioInput = producto.precio; // Restaurar valor
+          producto.cantidadInput = producto.cantidad; // Restaurar valor
+        }
+      } finally {
+        console.log("confirmarCambios finalizado");
+      }
+    },
+    async eliminarProducto(nombre, calidad) {
+      try {
+        const result = await Swal.fire({
+          title: "¿Estás seguro?",
+          text: `¿Quieres eliminar el producto "${nombre}" con calidad ${calidad}?`,
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Sí, eliminar",
+          cancelButtonText: "Cancelar",
+        });
+        if (!result.isConfirmed) return;
 
-// Ejecutar mostrarProductosInterfaz solo en mostrar_producto.html
-document.addEventListener("DOMContentLoaded", () => {
-  if (window.location.pathname.includes("mostrar_producto.html")) {
-    mostrarProductosInterfaz();
-  }
+        const obj = new Producto(nombre, 0, 0, calidad);
+        if (!obj.nombre || isNaN(obj.calidad)) {
+          this.mensaje = "Error: Datos inválidos para eliminar";
+          this.mensajeError = true;
+          return;
+        }
+        const originalLength = this.productos.length;
+        this.productos = eliminar.call(obj, this.productos);
+        if (this.productos.length < originalLength) {
+          Toastify({
+            text: "Producto eliminado correctamente",
+            duration: 3000,
+            gravity: "bottom",
+            position: "right",
+            style: {
+              background: "#4caf50",
+              color: "#fff",
+            },
+          }).showToast();
+          this.mensaje = "";
+          this.mensajeError = false;
+        } else {
+          this.mensaje = "El producto no existe";
+          this.mensajeError = true;
+        }
+      } catch (error) {
+        console.error("Error en eliminarProducto (try-catch):", error);
+        this.mensaje = "Error al eliminar producto";
+        this.mensajeError = true;
+      } finally {
+        console.log("eliminarProducto finalizado");
+      }
+    },
+  },
 });
 
-function handleAgregar(event) {
-  event.preventDefault();
-  if (typeof agregar !== "function" || typeof lista === "undefined") {
-    document.getElementById("mensaje").textContent =
-      "Error: Funcionalidad no disponible";
-    document.getElementById("mensaje").classList.add("error");
-    return;
-  }
-  const formData = new FormData(event.target);
-  const nombre = formData.get("nombre")?.trim();
-  const precio = Number(formData.get("precio"));
-  const cantidad = Number(formData.get("cantidad"));
-  const calidad = Number(formData.get("calidad"));
-  const { error, obj } = nuevo_objeto(nombre, precio, cantidad, calidad);
-  const mensaje = document.getElementById("mensaje");
-  if (error || !obj) {
-    mensaje.textContent = error;
-    mensaje.classList.add("error");
-    mensaje.classList.remove("success");
-    return;
-  }
-  lista = agregar.call(obj, lista);
-  mensaje.textContent = "Producto agregado correctamente";
-  mensaje.classList.add("success");
-  mensaje.classList.remove("error");
-  event.target.reset();
-  console.log("Producto agregado, lista actual:", lista);
-}
+Vue.component("agregar-component", {
+  template: "#agregar-template",
+  data() {
+    return {
+      nuevoProducto: {
+        nombre: "",
+        precio: 0,
+        cantidad: 0,
+        calidad: 0,
+      },
+      mensaje: "",
+      mensajeError: false,
+    };
+  },
+  methods: {
+    handleAgregar() {
+      try {
+        const { error, obj } = nuevo_objeto(
+          this.nuevoProducto.nombre.trim(),
+          this.nuevoProducto.precio,
+          this.nuevoProducto.cantidad,
+          this.nuevoProducto.calidad
+        );
+        if (error || !obj) {
+          this.mensaje = error;
+          this.mensajeError = true;
+          return;
+        }
+        this.$root.productos = agregar.call(obj, this.$root.productos);
+        Toastify({
+          text: "Producto agregado correctamente",
+          duration: 3000,
+          gravity: "bottom",
+          position: "right",
+          style: {
+            background: "#4caf50",
+            color: "#fff",
+          },
+        }).showToast();
+        this.mensaje = "";
+        this.mensajeError = false;
+        this.nuevoProducto = { nombre: "", precio: 0, cantidad: 0, calidad: 0 };
+        setTimeout(() => {
+          this.$router.push("/menu");
+        }, 1000);
+      } catch (error) {
+        console.error("Error en handleAgregar (try-catch):", error);
+        this.mensaje = "Error al agregar producto";
+        this.mensajeError = true;
+      } finally {
+        console.log("handleAgregar finalizado");
+      }
+    },
+  },
+});
 
-function handleEliminar(event) {
-  event.preventDefault();
-  if (typeof eliminar !== "function" || typeof lista === "undefined") {
-    document.getElementById("mensaje").textContent =
-      "Error: Funcionalidad no disponible";
-    document.getElementById("mensaje").classList.add("error");
-    return;
-  }
-  const formData = new FormData(event.target);
-  const obj = new Producto(
-    formData.get("nombre")?.trim(),
-    0,
-    0,
-    Number(formData.get("calidad"))
-  );
-  const mensaje = document.getElementById("mensaje");
-  if (!obj.nombre || isNaN(obj.calidad)) {
-    mensaje.textContent = "Error: Ingrese un nombre y una calidad válidos";
-    mensaje.classList.add("error");
-    mensaje.classList.remove("success");
-    return;
-  }
-  const originalLength = lista.length;
-  lista = eliminar.call(obj, lista);
-  if (lista.length < originalLength) {
-    mensaje.textContent = "Producto eliminado correctamente";
-    mensaje.classList.add("success");
-    mensaje.classList.remove("error");
-  } else {
-    mensaje.textContent = "El producto no existe";
-    mensaje.classList.add("error");
-    mensaje.classList.remove("success");
-  }
-  event.target.reset();
-  console.log("Producto eliminado, lista actual:", lista);
-}
+// Configuración de Vue Router
+const routes = [
+  { path: "/menu", component: Vue.component("menu-component") },
+  { path: "/agregar", component: Vue.component("agregar-component") },
+  { path: "/", redirect: "/menu" },
+];
 
-let lista = cargarLista();
+const router = new VueRouter({
+  routes,
+});
 
-function agregarProducto() {
-  window.location.href = "agregar_producto.html";
-}
-
-function mostrarProductos() {
-  window.location.href = "mostrar_producto.html";
-}
-
-function eliminarProductos() {
-  window.location.href = "eliminar_producto.html";
-}
-
-function salir() {
-  console.log(
-    "Botón Salir clicado. Intentando cerrar la ventana del navegador."
-  );
-  console.log(
-    "Nota: La ventana solo se cerrará si fue abierta por un script (por ejemplo, con window.open)."
-  );
-  window.close();
-}
+// Instancia principal de Vue
+new Vue({
+  el: "#app",
+  router,
+  data: {
+    productos: [],
+  },
+  created() {
+    cargarLista()
+      .then((data) => {
+        this.productos = data;
+      })
+      .catch((error) => {
+        console.error("Error al cargar lista inicial:", error);
+      });
+  },
+});
