@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gestión de Inventario - SPA</title>
-    <link rel="stylesheet" href="./estilos.css" />
+    <link rel="stylesheet" href="estilos.css" />
     <!-- CDN para Vue.js -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
     <!-- CDN para Vue Router -->
@@ -17,16 +17,20 @@
       href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
     />
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="./inventario.js" defer></script>
+    <!-- CDN para jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="inventario.js" defer></script>
   </head>
   <body>
     <div id="app">
-      <div class="menu">
+      <div class="navbar">
         <h1>Gestión de Inventario</h1>
-        <nav>
+        <div class="nav-links">
           <router-link to="/menu">Menú</router-link>
           <router-link to="/agregar">Agregar Producto</router-link>
-        </nav>
+        </div>
+      </div>
+      <div class="menu">
         <router-view></router-view>
       </div>
     </div>
@@ -34,79 +38,52 @@
     <!-- Componentes Vue -->
     <template id="menu-template">
       <div>
-        <table id="tabla-productos">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Precio</th>
-              <th>Cantidad</th>
-              <th>Calidad</th>
-              <th>Precio Total</th>
-              <th>Modificar Precio</th>
-              <th>Modificar Cantidad</th>
-              <th>Confirmar Cambios</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="producto in productos"
-              :key="producto.nombre + producto.calidad"
-            >
-              <td>{{ producto.nombre }}</td>
-              <td>${{ producto.precio.toFixed(2) }}</td>
-              <td>{{ producto.cantidad }}</td>
-              <td>{{ producto.calidad }}°</td>
-              <td>${{ (producto.precio * producto.cantidad).toFixed(2) }}</td>
-              <td>
-                <input
-                  type="number"
-                  v-model.number="producto.precioInput"
-                  min="0"
-                  step="0.01"
-                  class="precio-input"
-                />
-              </td>
-              <td>
-                <button
-                  class="incrementar-btn"
-                  @click="incrementarCantidad(producto.nombre, producto.calidad)"
-                >
-                  +
-                </button>
-                <button
-                  class="decrementar-btn"
-                  @click="decrementarCantidad(producto.nombre, producto.calidad)"
-                >
-                  -
-                </button>
-                <input
-                  type="number"
-                  v-model.number="producto.cantidadInput"
-                  min="0"
-                  step="1"
-                  class="cantidad-input"
-                />
-              </td>
-              <td>
-                <button
-                  class="confirmar-btn"
-                  @click="confirmarCambios(producto.nombre, producto.calidad)"
-                >
-                  Confirmar
-                </button>
-              </td>
-              <td>
-                <button
-                  class="eliminar-btn"
-                  @click="eliminarProducto(producto.nombre, producto.calidad)"
-                >
-                  Eliminar
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <button class="generar-pdf-btn" @click="generarPDF">Generar PDF</button>
+        <div class="tabla-container">
+          <table id="tabla-productos">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Precio</th>
+                <th>Cantidad</th>
+                <th>Calidad</th>
+                <th>Precio Total</th>
+                <th>Eliminar</th>
+                <th>Modificar</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="producto in productos"
+                :key="producto.nombre + producto.calidad"
+              >
+                <td>{{ producto.nombre }}</td>
+                <td>$ {{ producto.precio.toFixed(2) }}</td>
+                <td>{{ producto.cantidad }}</td>
+                <td>{{ producto.calidad }}°</td>
+                <td>
+                  $ {{ (producto.precio * producto.cantidad).toFixed(2) }}
+                </td>
+                <td>
+                  <button
+                    class="eliminar-btn"
+                    @click="eliminarProducto(producto.nombre, producto.calidad)"
+                  >
+                    Eliminar
+                  </button>
+                </td>
+                <td>
+                  <button
+                    class="modificar-btn"
+                    @click="modificarProducto(producto.nombre, producto.calidad, producto.precio, producto.cantidad)"
+                  >
+                    Modificar
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <p
           class="mensaje"
           :class="{ error: mensajeError, success: !mensajeError }"
@@ -122,7 +99,7 @@
         <form @submit.prevent="handleAgregar">
           <label for="nombre">Nombre:</label>
           <input type="text" v-model="nuevoProducto.nombre" required />
-          <label for="precio">Precio:</label>
+          <label for="precio">Precio ($):</label>
           <input
             type="number"
             v-model.number="nuevoProducto.precio"
@@ -135,6 +112,7 @@
             type="number"
             v-model.number="nuevoProducto.cantidad"
             min="0"
+            step="1"
             required
           />
           <label for="calidad">Calidad:</label>
@@ -142,6 +120,7 @@
             type="number"
             v-model.number="nuevoProducto.calidad"
             min="0"
+            step="1"
             required
           />
           <button type="submit">Agregar</button>

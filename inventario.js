@@ -4,8 +4,6 @@ class Producto {
     this.precio = precio;
     this.cantidad = cantidad;
     this.calidad = calidad;
-    this.cantidadInput = cantidad; // Inicializar cantidadInput con la cantidad actual
-    this.precioInput = precio; // Inicializar precioInput con el precio actual
   }
 
   toString() {
@@ -17,15 +15,32 @@ class Producto {
 
 const nuevo_objeto = (nombre, precio, cantidad, calidad) => {
   try {
-    if (!nombre) {
+    if (!nombre || typeof nombre !== "string" || nombre.trim() === "") {
       return { error: "EL NOMBRE NO PUEDE ESTAR VACIO", obj: null };
     }
-    if (isNaN(precio) || isNaN(cantidad) || isNaN(calidad)) {
-      return { error: "ALGUNO DE LOS VALORES NO ES VALIDO", obj: null };
+    if (isNaN(precio) || precio < 0) {
+      return { error: "EL PRECIO DEBE SER UN NÚMERO NO NEGATIVO", obj: null };
+    }
+    if (isNaN(cantidad) || !Number.isInteger(cantidad) || cantidad < 0) {
+      return {
+        error: "LA CANTIDAD DEBE SER UN NÚMERO ENTERO NO NEGATIVO",
+        obj: null,
+      };
+    }
+    if (isNaN(calidad) || !Number.isInteger(calidad) || calidad < 0) {
+      return {
+        error: "LA CALIDAD DEBE SER UN NÚMERO ENTERO NO NEGATIVO",
+        obj: null,
+      };
     }
     return {
       error: null,
-      obj: new Producto(nombre, precio, cantidad, calidad),
+      obj: new Producto(
+        nombre.trim(),
+        parseFloat(precio.toFixed(2)),
+        parseInt(cantidad),
+        parseInt(calidad)
+      ),
     };
   } catch (error) {
     console.error("Error en nuevo_objeto (try-catch):", error);
@@ -86,9 +101,15 @@ const cargarLista = () => {
               .map((item) => {
                 if (
                   !item.nombre ||
+                  typeof item.nombre !== "string" ||
                   isNaN(item.precio) ||
+                  item.precio < 0 ||
                   isNaN(item.cantidad) ||
-                  isNaN(item.calidad)
+                  item.cantidad < 0 ||
+                  isNaN(item.calidad) ||
+                  item.calidad < 0 ||
+                  !Number.isInteger(item.cantidad) ||
+                  !Number.isInteger(item.calidad)
                 ) {
                   console.error("Elemento inválido en localStorage:", item);
                   return null;
@@ -129,10 +150,12 @@ const agregar = function (lista) {
   try {
     if (
       lista.some(
-        (item) => item.nombre === this.nombre && item.calidad === this.calidad
+        (item) =>
+          item.nombre.toLowerCase() === this.nombre.toLowerCase() &&
+          item.calidad === this.calidad
       )
     ) {
-      return lista;
+      return lista; // No agrega si ya existe
     }
     const newList = [...lista, this];
     guardarLista(newList);
@@ -148,7 +171,11 @@ const agregar = function (lista) {
 const eliminar = function (lista) {
   try {
     const newList = lista.filter(
-      (item) => !(item.nombre === this.nombre && item.calidad === this.calidad)
+      (item) =>
+        !(
+          item.nombre.toLowerCase() === this.nombre.toLowerCase() &&
+          item.calidad === this.calidad
+        )
     );
     guardarLista(newList);
     return newList;
@@ -186,12 +213,7 @@ Vue.component("menu-component", {
     cargarProductos() {
       cargarLista()
         .then((data) => {
-          // Inicializar cantidadInput y precioInput para cada producto
-          this.productos = data.map((producto) => ({
-            ...producto,
-            cantidadInput: producto.cantidad,
-            precioInput: producto.precio,
-          }));
+          this.productos = data;
           if (data.length === 0) {
             this.mensaje = "No hay productos para mostrar";
             this.mensajeError = true;
@@ -206,132 +228,95 @@ Vue.component("menu-component", {
           this.mensajeError = true;
         });
     },
-    async incrementarCantidad(nombre, calidad) {
+    async modificarProducto(nombre, calidad, precioActual, cantidadActual) {
       try {
-        const producto = this.productos.find(
-          (item) => item.nombre === nombre && item.calidad === calidad
-        );
-        if (!producto) {
-          this.mensaje = "Error: Producto no encontrado";
-          this.mensajeError = true;
-          return;
-        }
-        producto.cantidad += 1;
-        producto.cantidadInput = producto.cantidad; // Sincronizar input
-        await guardarLista(this.productos);
-        Toastify({
-          text: `Cantidad de ${nombre} incrementada`,
-          duration: 3000,
-          gravity: "bottom",
-          position: "right",
-          style: {
-            background: "#4caf50",
-            color: "#fff",
+        const { value: formValues } = await Swal.fire({
+          title: `Modificar ${nombre} (Calidad ${calidad}°)`,
+          html:
+            "<label>Precio ($):</label>" +
+            '<input id="swal-input-precio" type="number" class="swal2-input" min="0" step="0.01" value="' +
+            precioActual +
+            '">' +
+            "<label>Cantidad:</label>" +
+            '<input id="swal-input-cantidad" type="number" class="swal2-input" min="0" step="1" value="' +
+            cantidadActual +
+            '">',
+          focusConfirm: false,
+          showCancelButton: true,
+          confirmButtonText: "Confirmar",
+          cancelButtonText: "Cancelar",
+          preConfirm: () => {
+            return {
+              precio: parseFloat(
+                document.getElementById("swal-input-precio").value
+              ),
+              cantidad: parseInt(
+                document.getElementById("swal-input-cantidad").value
+              ),
+            };
           },
-        }).showToast();
-        this.mensaje = "";
-        this.mensajeError = false;
+        });
+
+        if (formValues) {
+          const { precio, cantidad } = formValues;
+          const producto = this.productos.find(
+            (item) =>
+              item.nombre.toLowerCase() === nombre.toLowerCase() &&
+              item.calidad === calidad
+          );
+          if (!producto) {
+            this.mensaje = "Error: Producto no encontrado";
+            this.mensajeError = true;
+            return;
+          }
+          if (isNaN(precio) || precio < 0) {
+            this.mensaje = "Error: El precio debe ser un número no negativo";
+            this.mensajeError = true;
+            return;
+          }
+          if (isNaN(cantidad) || !Number.isInteger(cantidad) || cantidad < 0) {
+            this.mensaje =
+              "Error: La cantidad debe ser un número entero no negativo";
+            this.mensajeError = true;
+            return;
+          }
+          let cambiosRealizados = false;
+          let mensajeToast = [];
+          if (precio !== producto.precio) {
+            producto.precio = precio;
+            cambiosRealizados = true;
+            mensajeToast.push(`Precio actualizado a $${precio.toFixed(2)}`);
+          }
+          if (cantidad !== producto.cantidad) {
+            producto.cantidad = cantidad;
+            cambiosRealizados = true;
+            mensajeToast.push(`Cantidad actualizada a ${cantidad}`);
+          }
+          if (!cambiosRealizados) {
+            this.mensaje = "No se realizaron cambios";
+            this.mensajeError = true;
+            return;
+          }
+          await guardarLista(this.productos);
+          Toastify({
+            text: `Cambios en ${nombre}: ${mensajeToast.join(", ")}`,
+            duration: 3000,
+            gravity: "bottom",
+            position: "right",
+            style: {
+              background: "#4caf50",
+              color: "#fff",
+            },
+          }).showToast();
+          this.mensaje = "";
+          this.mensajeError = false;
+        }
       } catch (error) {
-        console.error("Error en incrementarCantidad (try-catch):", error);
-        this.mensaje = "Error al incrementar cantidad";
+        console.error("Error en modificarProducto (try-catch):", error);
+        this.mensaje = "Error al modificar producto";
         this.mensajeError = true;
       } finally {
-        console.log("incrementarCantidad finalizado");
-      }
-    },
-    async decrementarCantidad(nombre, calidad) {
-      try {
-        const producto = this.productos.find(
-          (item) => item.nombre === nombre && item.calidad === calidad
-        );
-        if (!producto) {
-          this.mensaje = "Error: Producto no encontrado";
-          this.mensajeError = true;
-          return;
-        }
-        if (producto.cantidad <= 0) {
-          this.mensaje = "Error: La cantidad no puede ser negativa";
-          this.mensajeError = true;
-          return;
-        }
-        producto.cantidad -= 1;
-        producto.cantidadInput = producto.cantidad; // Sincronizar input
-        await guardarLista(this.productos);
-        Toastify({
-          text: `Cantidad de ${nombre} decrementada`,
-          duration: 3000,
-          gravity: "bottom",
-          position: "right",
-          style: {
-            background: "#4caf50",
-            color: "#fff",
-          },
-        }).showToast();
-        this.mensaje = "";
-        this.mensajeError = false;
-      } catch (error) {
-        console.error("Error en decrementarCantidad (try-catch):", error);
-        this.mensaje = "Error al decrementar cantidad";
-        this.mensajeError = true;
-      } finally {
-        console.log("decrementarCantidad finalizado");
-      }
-    },
-    async confirmarCambios(nombre, calidad) {
-      try {
-        const producto = this.productos.find(
-          (item) => item.nombre === nombre && item.calidad === calidad
-        );
-        if (!producto) {
-          this.mensaje = "Error: Producto no encontrado";
-          this.mensajeError = true;
-          return;
-        }
-        const nuevoPrecio = producto.precioInput;
-        const nuevaCantidad = producto.cantidadInput;
-        if (isNaN(nuevoPrecio) || nuevoPrecio < 0) {
-          this.mensaje = "Error: El precio debe ser un número no negativo";
-          this.mensajeError = true;
-          producto.precioInput = producto.precio; // Restaurar valor
-          return;
-        }
-        if (!Number.isInteger(nuevaCantidad) || nuevaCantidad < 0) {
-          this.mensaje =
-            "Error: La cantidad debe ser un número entero no negativo";
-          this.mensajeError = true;
-          producto.cantidadInput = producto.cantidad; // Restaurar valor
-          return;
-        }
-        producto.precio = nuevoPrecio;
-        producto.cantidad = nuevaCantidad;
-        producto.precioInput = nuevoPrecio; // Sincronizar input
-        producto.cantidadInput = nuevaCantidad; // Sincronizar input
-        await guardarLista(this.productos);
-        Toastify({
-          text: `Precio y cantidad de ${nombre} actualizados`,
-          duration: 3000,
-          gravity: "bottom",
-          position: "right",
-          style: {
-            background: "#4caf50",
-            color: "#fff",
-          },
-        }).showToast();
-        this.mensaje = "";
-        this.mensajeError = false;
-      } catch (error) {
-        console.error("Error en confirmarCambios (try-catch):", error);
-        this.mensaje = "Error al actualizar precio y cantidad";
-        this.mensajeError = true;
-        const producto = this.productos.find(
-          (item) => item.nombre === nombre && item.calidad === calidad
-        );
-        if (producto) {
-          producto.precioInput = producto.precio; // Restaurar valor
-          producto.cantidadInput = producto.cantidad; // Restaurar valor
-        }
-      } finally {
-        console.log("confirmarCambios finalizado");
+        console.log("modificarProducto finalizado");
       }
     },
     async eliminarProducto(nombre, calidad) {
@@ -379,6 +364,68 @@ Vue.component("menu-component", {
         console.log("eliminarProducto finalizado");
       }
     },
+    generarPDF() {
+      try {
+        if (this.productos.length === 0) {
+          this.mensaje = "No hay productos para incluir en el PDF";
+          this.mensajeError = true;
+          return;
+        }
+
+        // Usar jsPDF para generar el PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Título
+        doc.setFontSize(16);
+        doc.text("Lista de Productos", 10, 10);
+
+        // Encabezados de la tabla
+        doc.setFontSize(12);
+        doc.text("Item", 10, 20);
+        doc.text("Precio ($)", 50, 20);
+        doc.text("Cantidad", 80, 20);
+        doc.text("Calidad (°)", 110, 20);
+        doc.text("Precio Total ($)", 140, 20);
+
+        // Línea horizontal debajo de los encabezados
+        doc.line(10, 22, 190, 22);
+
+        // Filas de productos
+        let y = 30;
+        this.productos.forEach((producto) => {
+          const precioTotal = (producto.precio * producto.cantidad).toFixed(2);
+          doc.text(producto.nombre, 10, y);
+          doc.text(`$${producto.precio.toFixed(2)}`, 50, y);
+          doc.text(`${producto.cantidad}`, 80, y);
+          doc.text(`${producto.calidad}°`, 110, y);
+          doc.text(`$${precioTotal}`, 140, y);
+          y += 10;
+        });
+
+        // Guardar el PDF
+        doc.save("inventario.pdf");
+
+        Toastify({
+          text: "PDF generado correctamente",
+          duration: 3000,
+          gravity: "bottom",
+          position: "right",
+          style: {
+            background: "#4caf50",
+            color: "#fff",
+          },
+        }).showToast();
+        this.mensaje = "";
+        this.mensajeError = false;
+      } catch (error) {
+        console.error("Error en generarPDF (try-catch):", error);
+        this.mensaje = "Error al generar el PDF";
+        this.mensajeError = true;
+      } finally {
+        console.log("generarPDF finalizado");
+      }
+    },
   },
 });
 
@@ -397,22 +444,52 @@ Vue.component("agregar-component", {
     };
   },
   methods: {
-    handleAgregar() {
+    async handleAgregar() {
       try {
-        const { error, obj } = nuevo_objeto(
-          this.nuevoProducto.nombre.trim(),
-          this.nuevoProducto.precio,
-          this.nuevoProducto.cantidad,
-          this.nuevoProducto.calidad
+        // Normalizar y validar datos de entrada
+        const nombre = this.nuevoProducto.nombre.trim();
+        const precio = parseFloat(this.nuevoProducto.precio);
+        const cantidad = parseInt(this.nuevoProducto.cantidad);
+        const calidad = parseInt(this.nuevoProducto.calidad);
+
+        // Verificar si ya existe un producto con el mismo nombre y calidad
+        const existeProducto = this.$root.productos.some(
+          (item) =>
+            item.nombre.toLowerCase() === nombre.toLowerCase() &&
+            item.calidad === calidad
         );
-        if (error || !obj) {
-          this.mensaje = error;
-          this.mensajeError = true;
+        if (existeProducto) {
+          await Swal.fire({
+            title: "Error",
+            text: `Ya existe un producto con el nombre "${nombre}" y calidad ${calidad}°.`,
+            icon: "error",
+            confirmButtonText: "Aceptar",
+          });
+          this.mensaje = "";
+          this.mensajeError = false;
           return;
         }
+
+        // Validar datos con nuevo_objeto
+        const { error, obj } = nuevo_objeto(nombre, precio, cantidad, calidad);
+        if (error || !obj) {
+          await Swal.fire({
+            title: "Error",
+            text: error,
+            icon: "error",
+            confirmButtonText: "Aceptar",
+          });
+          this.mensaje = "";
+          this.mensajeError = false;
+          return;
+        }
+
+        // Agregar producto
         this.$root.productos = agregar.call(obj, this.$root.productos);
+
+        // Mostrar notificación de éxito
         Toastify({
-          text: "Producto agregado correctamente",
+          text: `Producto "${nombre}" agregado correctamente`,
           duration: 3000,
           gravity: "bottom",
           position: "right",
@@ -421,16 +498,26 @@ Vue.component("agregar-component", {
             color: "#fff",
           },
         }).showToast();
+
+        // Limpiar formulario
+        this.nuevoProducto = { nombre: "", precio: 0, cantidad: 0, calidad: 0 };
         this.mensaje = "";
         this.mensajeError = false;
-        this.nuevoProducto = { nombre: "", precio: 0, cantidad: 0, calidad: 0 };
+
+        // Redirigir a /menu tras 1 segundo
         setTimeout(() => {
           this.$router.push("/menu");
         }, 1000);
       } catch (error) {
         console.error("Error en handleAgregar (try-catch):", error);
-        this.mensaje = "Error al agregar producto";
-        this.mensajeError = true;
+        await Swal.fire({
+          title: "Error",
+          text: "Error inesperado al agregar el producto",
+          icon: "error",
+          confirmButtonText: "Aceptar",
+        });
+        this.mensaje = "";
+        this.mensajeError = false;
       } finally {
         console.log("handleAgregar finalizado");
       }

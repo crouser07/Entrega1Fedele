@@ -7,6 +7,49 @@ body {
   min-height: 100vh;
 }
 
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: #2a3b4c;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
+.navbar h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 15px;
+  margin-right: 20px; /* Ajustado para mover los botones más a la izquierda */
+}
+
+.nav-links a {
+  color: #e0e0e0;
+  text-decoration: none;
+  font-size: 16px;
+  padding: 8px 16px;
+  background-color: #3c5066;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.nav-links a:hover {
+  background-color: #4a6a88;
+}
+
+.nav-links a.router-link-active {
+  background-color: #4a6a88;
+}
+
 .menu {
   display: flex;
   flex-direction: column;
@@ -15,7 +58,7 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 20px;
+  padding: 80px 20px 20px; /* Ajustado para la barra fija */
 }
 
 .content {
@@ -25,36 +68,13 @@ body {
   justify-content: center;
   min-height: 100vh;
   text-align: center;
-  padding: 20px;
-}
-
-nav {
-  margin-bottom: 20px;
-}
-
-nav a {
-  margin: 0 10px;
-  color: #e0e0e0;
-  text-decoration: none;
-  font-size: 16px;
-  padding: 8px 16px;
-  background-color: #2a3b4c;
-  border-radius: 5px;
-  transition: background-color 0.3s;
-}
-
-nav a:hover {
-  background-color: #3c5066;
-}
-
-nav a.router-link-active {
-  background-color: #4a6a88;
+  padding: 80px 20px 20px; /* Ajustado para la barra fija */
 }
 
 button,
 .eliminar-btn,
-.incrementar-btn,
-.decrementar-btn {
+.modificar-btn,
+.generar-pdf-btn {
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
@@ -67,40 +87,27 @@ button,
 
 button:hover,
 .eliminar-btn:hover,
-.incrementar-btn:hover,
-.decrementar-btn:hover {
+.modificar-btn:hover,
+.generar-pdf-btn:hover {
   background-color: #3c5066;
 }
 
 button:active,
 .eliminar-btn:active,
-.incrementar-btn:active,
-.decrementar-btn:active {
+.modificar-btn:active,
+.generar-pdf-btn:active {
   background-color: #1f2d3b;
 }
 
 .eliminar-btn,
-.incrementar-btn,
-.decrementar-btn {
+.modificar-btn {
   padding: 5px 10px;
   font-size: 14px;
   margin: 0 5px;
 }
 
-.cantidad-input {
-  width: 60px;
-  padding: 5px;
-  font-size: 14px;
-  background-color: #2a2a2a;
-  color: #e0e0e0;
-  border: 1px solid #3c5066;
-  border-radius: 5px;
-  text-align: center;
-}
-
-.cantidad-input:focus {
-  outline: none;
-  border-color: #4a6a88;
+.generar-pdf-btn {
+  margin-bottom: 20px;
 }
 
 form {
@@ -130,22 +137,35 @@ input:focus {
   border-color: #4a6a88;
 }
 
-table {
-  width: 80%;
-  max-width: 900px;
-  border-collapse: collapse;
+.tabla-container {
+  width: 95%; /* Aumentado para ocupar más espacio en pantalla */
+  max-width: 1200px; /* Máximo más amplio para pantallas grandes */
   margin: 20px 0;
+  overflow-x: auto; /* Permitir scroll horizontal si es necesario */
+}
+
+table {
+  width: 100%;
+  border-collapse: separate; /* Cambiado para eliminar líneas internas */
+  border-spacing: 0;
+  border: 1px solid #3c5066; /* Borde externo de la tabla */
+  table-layout: fixed; /* Distribución fija de columnas para evitar que se expandan */
 }
 
 th,
 td {
-  padding: 10px;
-  border: 1px solid #3c5066;
+  padding: 12px 15px; /* Más espacio en celdas para datos */
   text-align: left;
+  border: none; /* Sin bordes internos en columnas */
+  overflow: hidden; /* Ocultar texto que sobrepase */
+  white-space: nowrap; /* No permitir salto de línea */
+  word-wrap: break-word; /* Permitir quiebre de palabra si es necesario */
+  text-overflow: ellipsis; /* ... si el texto es muy largo */
 }
 
 th {
   background-color: #2a3b4c;
+  border-bottom: 2px solid #3c5066; /* Línea bajo los encabezados */
 }
 
 td {
@@ -163,4 +183,77 @@ td {
 
 .mensaje.success {
   color: #4caf50;
+}
+
+/* Estilos para el modal de SweetAlert */
+.swal2-popup {
+  background-color: #252525 !important;
+  color: #e0e0e0 !important;
+}
+
+.swal2-title {
+  color: #e0e0e0 !important;
+}
+
+.swal2-html-container label {
+  color: #e0e0e0;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.swal2-input {
+  background-color: #2a2a2a !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #3c5066 !important;
+  border-radius: 5px !important;
+}
+
+.swal2-input:focus {
+  border-color: #4a6a88 !important;
+}
+
+.swal2-confirm,
+.swal2-cancel {
+  padding: 5px 10px !important;
+  font-size: 14px !important;
+}
+
+.swal2-confirm {
+  background-color: #4caf50 !important;
+}
+
+.swal2-cancel {
+  background-color: #ff6b6b !important;
+}
+
+/* Responsividad para pantallas pequeñas */
+@media (max-width: 600px) {
+  .navbar {
+    flex-direction: column;
+    padding: 10px;
+  }
+  .nav-links {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin-right: 0; /* Sin margen en pantallas pequeñas */
+  }
+  .nav-links a {
+    width: 100%;
+    text-align: center;
+  }
+  .menu,
+  .content {
+    padding-top: 120px; /* Más espacio en pantallas pequeñas */
+  }
+  .tabla-container {
+    width: 100%; /* Ocupa todo el ancho en pantallas pequeñas */
+  }
+  table {
+    font-size: 12px; /* Reducir tamaño de fuente en móviles */
+  }
+  th,
+  td {
+    padding: 8px 5px; /* Menos padding en móviles */
+  }
 }
